@@ -1,11 +1,13 @@
+/* запрос для посчёта общего количества
+ покупателей из таблицы customers: */
 select COUNT(*) as customers_count
 from customers
-/* запрос для посчёта общего количества
- покупателей из таблицы customers */
 ;
 
+/* запрос для определения десяти лучших
+ продавцов по суммарной выручке: */
 select
-	CONCAT(e.first_name, ' ', e.last_name) as name,
+	CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
 	COUNT(s.sales_id) as operations,
 	ROUND(SUM(s.quantity * p.price), 0) as income
 from sales s
@@ -16,12 +18,13 @@ join products p
 group by 1
 order by 3 desc
 limit 10
-/* запрос для определения десяти лучших
- продавцов по суммарной выручке */
 ;
 
+/* запрос для определения продавцов,
+ чья средняя выручка за сделку меньше
+ средней выручки за сделку по всем продавцам: */
 select
-	CONCAT(e.first_name, ' ', e.last_name) as name,
+	CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
 	ROUND(AVG(s.quantity * p.price), 0) as average_income
 from sales s
 join employees e
@@ -35,14 +38,12 @@ having AVG(s.quantity * p.price) <
 	join products p
 		on s.product_id = p.product_id)
 order by 2
-/* запрос для определения продавцов,
- чья средняя выручка за сделку меньше
- средней выручки за сделку по всем продавцам */
 ;
 
+/* запрос для получения информации о выручке по дням недели: */
 with tab as (
 	select
-		CONCAT(e.first_name, ' ', e.last_name) as name,
+		CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
 		TO_CHAR(s.sale_date, 'fmday') as weekday,
 		CASE WHEN TO_CHAR(s.sale_date, 'D') = '1'
 			THEN 7 ELSE TO_CHAR(s.sale_date, 'D')::integer - 1 end,
@@ -60,5 +61,63 @@ select
 	weekday,
 	income
 from tab
-/* запрос для получения информации о выручке по дням недели */
+;
+
+/* запрос для получения данных о возрастных группах покупателей: */
+select
+	case
+		when age between 16 and 25 then '16-25'
+		when age between 26 and 40 then '26-40'
+		else '40+'
+	end as age_category,
+	count(*) as count
+from customers
+group by 1
+order by 1
+;
+
+/* запрос для определения количества уникальных покупателей
+ и выручки по месяцам: */
+select
+	TO_CHAR(s.sale_date, 'yyyy-mm') as date,
+	sum(s.customer_id) as total_customers,
+	round(sum(s.quantity * p.price),0) as income
+from sales s
+join products p
+	on s.product_id = p.product_id
+group by 1
+order by 1
+;
+
+/* ! не получается убрать дубликат 11 и 12 строчек - 
+ такое ощущение, что это глюк базы !
+ запрос для выведения списка покупателей,
+ сделавших первую покупку в ходе проведения акций: */
+with tab as (
+	select distinct
+		case
+			when c.middle_initial is null
+				then CONCAT(c.first_name, ' ', c.last_name)
+			else CONCAT(c.first_name, ' ', c.middle_initial, ' ', c.last_name)
+		end as customer,
+		c.customer_id,
+		min(s.sale_date) as sale_date,
+		CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as seller,
+		p.price
+	from sales s
+	join employees e
+		on s.sales_person_id = e.employee_id
+	join products p
+		on s.product_id = p.product_id
+	join customers c
+		on c.customer_id = s.customer_id
+	group by 1, 2, 4, 5
+	having price = '0'
+	order by 2
+)
+select
+	customer,
+	sale_date,
+	seller
+from tab
 ;
