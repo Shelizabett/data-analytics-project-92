@@ -7,7 +7,7 @@ from customers
 /* запрос для определения десяти лучших
  продавцов по суммарной выручке: */
 select
-	CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
+	CONCAT(e.first_name, ' ', e.last_name) as name,
 	COUNT(s.sales_id) as operations,
 	ROUND(SUM(s.quantity * p.price), 0) as income
 from sales s
@@ -24,7 +24,7 @@ limit 10
  чья средняя выручка за сделку меньше
  средней выручки за сделку по всем продавцам: */
 select
-	CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
+	CONCAT(e.first_name, ' ', e.last_name) as name,
 	ROUND(AVG(s.quantity * p.price), 0) as average_income
 from sales s
 join employees e
@@ -43,7 +43,7 @@ order by 2
 /* запрос для получения информации о выручке по дням недели: */
 with tab as (
 	select
-		CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as name,
+		CONCAT(e.first_name, ' ', e.last_name) as name,
 		TO_CHAR(s.sale_date, 'fmday') as weekday,
 		CASE WHEN TO_CHAR(s.sale_date, 'D') = '1'
 			THEN 7 ELSE TO_CHAR(s.sale_date, 'D')::integer - 1 end,
@@ -89,20 +89,14 @@ group by 1
 order by 1
 ;
 
-/* ! не получается убрать дубликат 11 и 12 строчек - 
- такое ощущение, что это глюк базы !
- запрос для выведения списка покупателей,
+/* запрос для выведения списка покупателей,
  сделавших первую покупку в ходе проведения акций: */
 with tab as (
 	select distinct
-		case
-			when c.middle_initial is null
-				then CONCAT(c.first_name, ' ', c.last_name)
-			else CONCAT(c.first_name, ' ', c.middle_initial, ' ', c.last_name)
-		end as customer,
+		CONCAT(c.first_name, ' ', c.last_name) as customer,
 		c.customer_id,
 		min(s.sale_date) as sale_date,
-		CONCAT(e.first_name, ' ', e.middle_initial, ' ', e.last_name) as seller,
+		CONCAT(e.first_name, ' ', e.last_name) as seller,
 		p.price
 	from sales s
 	join employees e
@@ -117,7 +111,9 @@ with tab as (
 )
 select
 	customer,
-	sale_date,
-	seller
+	min(sale_date) as sale_date ,
+	min(seller) AS seller
 from tab
+group by 1
+order by 1
 ;
