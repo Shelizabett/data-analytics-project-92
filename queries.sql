@@ -9,7 +9,7 @@ from customers
 select
 	CONCAT(e.first_name, ' ', e.last_name) as name,
 	COUNT(s.sales_id) as operations,
-	ROUND(SUM(s.quantity * p.price), 0) as income
+	FLOOR(SUM(s.quantity * p.price)) as income
 from sales s
 join employees e
 	on s.sales_person_id = e.employee_id
@@ -80,8 +80,8 @@ order by 1
  и выручки по месяцам: */
 select
 	TO_CHAR(s.sale_date, 'yyyy-mm') as date,
-	sum(s.customer_id) as total_customers,
-	round(sum(s.quantity * p.price),0) as income
+	count(distinct s.customer_id) as total_customers,
+	floor(sum(s.quantity * p.price)) as income
 from sales s
 join products p
 	on s.product_id = p.product_id
