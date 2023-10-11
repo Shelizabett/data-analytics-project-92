@@ -44,7 +44,7 @@ order by 2
 with tab as (
 	select
 		CONCAT(e.first_name, ' ', e.last_name) as name,
-		TO_CHAR(s.sale_date, 'fmday') as weekday,
+		BTRIM(TO_CHAR(s.sale_date, 'fmday')) as weekday,
 		CASE WHEN TO_CHAR(s.sale_date, 'D') = '1'
 			THEN 7 ELSE TO_CHAR(s.sale_date, 'D')::integer - 1 end,
 		ROUND(SUM(s.quantity * p.price), 0) as income
