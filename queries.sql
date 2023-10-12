@@ -7,7 +7,7 @@ from customers
 /* запрос для определения десяти лучших
  продавцов по суммарной выручке: */
 select
-	CONCAT(e.first_name, ' ', e.last_name) as name,
+	e.first_name||' '||e.last_name as name,
 	COUNT(s.sales_id) as operations,
 	FLOOR(SUM(s.quantity * p.price)) as income
 from sales s
@@ -24,7 +24,7 @@ limit 10
  чья средняя выручка за сделку меньше
  средней выручки за сделку по всем продавцам: */
 select
-	CONCAT(e.first_name, ' ', e.last_name) as name,
+	e.first_name||' '||e.last_name as name,
 	ROUND(AVG(s.quantity * p.price), 0) as average_income
 from sales s
 join employees e
@@ -41,25 +41,17 @@ order by 2
 ;
 
 /* запрос для получения информации о выручке по дням недели: */
-with tab as (
-	select
-		CONCAT(e.first_name, ' ', e.last_name) as name,
-		TO_CHAR((s.sale_date),'day') as weekday,
-		TO_CHAR(s.sale_date, 'ID'),
-		ROUND(SUM(s.quantity * p.price), 0) as income
-	from sales s
-	join employees e
-		on s.sales_person_id = e.employee_id
-	join products p
-		on s.product_id = p.product_id
-	group by 2, 3, 1
-	order by 3, 1
-)
 select
-	name,
-	weekday,
-	income
-from tab
+	e.first_name||' '||e.last_name as name,
+	TO_CHAR((s.sale_date),'day') as weekday,
+	ROUND(SUM(s.quantity * p.price), 0) as income
+from sales s
+join employees e
+	on s.sales_person_id = e.employee_id
+join products p
+	on s.product_id = p.product_id
+group by 2, 1, TO_CHAR((s.sale_date),'ID')
+order by TO_CHAR((s.sale_date),'ID'), 1
 ;
 
 /* запрос для получения данных о возрастных группах покупателей: */
@@ -78,7 +70,7 @@ order by 1
 /* запрос для определения количества уникальных покупателей
  и выручки по месяцам: */
 select
-	TO_CHAR(s.sale_date, 'yyyy-mm') as date,
+	to_char(s.sale_date, 'yyyy-mm') as date,
 	count(distinct s.customer_id) as total_customers,
 	floor(sum(s.quantity * p.price)) as income
 from sales s
@@ -91,11 +83,11 @@ order by 1
 /* запрос для выведения списка покупателей,
  сделавших первую покупку в ходе проведения акций: */
 with tab as (
-	select distinct
-		CONCAT(c.first_name, ' ', c.last_name) as customer,
+	select
+		distinct on (c.customer_id) s.sale_date as sale_date,
 		c.customer_id,
-		min(s.sale_date) as sale_date,
-		CONCAT(e.first_name, ' ', e.last_name) as seller,
+		c.first_name||' '||c.last_name as customer,
+		e.first_name||' '||e.last_name as seller,
 		p.price
 	from sales s
 	join employees e
@@ -104,15 +96,13 @@ with tab as (
 		on s.product_id = p.product_id
 	join customers c
 		on c.customer_id = s.customer_id
-	group by 1, 2, 4, 5
+	group by 2, 1, 3, 4, 5
 	having price = '0'
 	order by 2
 )
 select
 	customer,
-	min(sale_date) as sale_date ,
-	min(seller) AS seller
+	sale_date,
+	seller
 from tab
-group by 1
-order by 1
 ;
